@@ -58,6 +58,12 @@ def setup():
     board[7][4] = "#"
     board[8][4] = "#"
     # board[9][4] = "#"
+    board[8][3] = "#"
+    board[8][2] = "#"
+    board[8][1] = "#"
+    board[4][2] = "#"
+    # board[8][0] = "#"
+
     return board
 
 # def print2dList(L):
