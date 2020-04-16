@@ -1,11 +1,13 @@
-#########################
-### Author: Sam Banks ###
-#########################
+##########################
+### Author: Sam Banks  ###
+### Mentor: Ping-Ya Chao #
+##########################
 
 # CITATION: Character spritesheet from https://opengameart.org/content/rpg-character
 # CITATION: Tileset from https://askariot.itch.io/game-tileset?download
 
 import math, time
+import level_generator
 
 # CITATION: Tkinter graphics wrapper from CMU 15-112 https://www.cs.cmu.edu/~112/index.html
 from cmu_112_graphics import *
@@ -223,14 +225,15 @@ class Pistol(Weapon):
 # Subclass of Weapon to represent machine gun.
 class MachineGun(Weapon):
     def __init__(self):
-        super().__init__("Machine Gun", 3, 20)
+        super().__init__("Machine Gun", 3, 50)
 
 # Main class for game.
 class MyApp(App):
     def appStarted(self):
         self.player = Player(self.width/2, self.height/2, MachineGun())
         self.timerDelay = 50
-        self.setupBoard()
+        # self.setupBoard()
+        self.board = level_generator.makeLevel()
         # self.cellSize = self.player.r*2
         self.cellSize = 50
 
@@ -315,6 +318,8 @@ class MyApp(App):
             self.player.dx += -1
         elif event.key == "d":
             self.player.dx += 1
+        elif event.key == "r":
+            MyApp(400, 400)
 
     # Works with keyPressed for movement.
     def keyReleased(self, event):
