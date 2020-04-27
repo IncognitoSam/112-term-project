@@ -238,6 +238,7 @@ class App(object):
     ####################################
     # User Methods:
     ####################################
+
     def redrawAll(app, canvas): pass      # draw (view) the model in the canvas
     def appStarted(app): pass           # initialize the model (app.xyz)
     def appStopped(app): pass           # cleanup after app is done running
@@ -522,7 +523,9 @@ class App(object):
         if (not app._running): return
         if (event and ((event.width < 2) or (event.height < 2))): return
         if (app._mousePressedOutsideWindow): return
+        tempWidth, tempHeight = app.width, app.height
         app.width,app.height,app.winx,app.winy = [int(v) for v in app._root.winfo_geometry().replace('x','+').split('+')]
+        
         if (app._lastWindowDims is None):
             app._lastWindowDims = (app.width, app.height, app.winx, app.winy)
         else:
@@ -532,6 +535,8 @@ class App(object):
                 app.updateTitle()
                 app.sizeChanged()
                 app._deferredRedrawAll() # avoid resize crashing on some platforms
+        app.width = 400
+        app.height = 400
 
     @_safeMethod
     def _mouseMotionWrapper(app):

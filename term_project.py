@@ -14,8 +14,18 @@
 
 # CITATION: JSON reading/writing referenced from https://stackabuse.com/reading-and-writing-json-to-a-file-in-python/
 
+# CITATION: Title image adapted from https://albatr.itch.io/superhotline-miami
+
+# CITATION: Referenced to rotate image: https://pythontic.com/image-processing/pillow/rotate
+
+# CITATION: Sound FX from https://freesound.org/people/LittleRobotSoundFactory/packs/16681/
+
+# CITATION: Referenced simpleaudio docs https://simpleaudio.readthedocs.io/en/latest/
+
 import math, time, json
 import level_generator
+from PIL import Image
+import simpleaudio as sa
 
 # CITATION: Tkinter graphics wrapper from CMU 15-112 https://www.cs.cmu.edu/~112/index.html
 from cmu_112_graphics import *
@@ -38,6 +48,14 @@ class Entity(object):
         else: a = 1
         self.x += a*self.dx*self.speedScale*timeScale
         self.y += a*self.dy*self.speedScale*timeScale
+
+    # Similar to the move method, except it returns (dx, dy) instead of actually
+    # the move.
+    def getMove(self, timeScale):
+        mag = (self.dx**2 + self.dy**2)**.5
+        if mag != 0: a = 1/mag
+        else: a = 1
+        return (a*self.dx*self.speedScale*timeScale,a*self.dy*self.speedScale*timeScale)
 
     # Checks if entity collides with square at given location.
     def checkObstacleCollision(self, squareX, squareY, squareR):
@@ -70,6 +88,31 @@ class Entity(object):
             a = math.cos(math.acos(abs(squareY-self.y)/r))
         d = squareR/a
         return r < d + self.r
+
+    # Collision detection for square entity and square obstacle.
+    # Returns (True/False, sideOfCollision).
+    def rectCollidesWithObstacle(self, playerX, playerY, squareX, squareY, squareR):
+        xCollides = False
+        yCollides = False
+        if playerX < squareX:
+            if squareX - playerX < squareR + self.r:
+                # return (True, "left")
+                xCollides = True
+        elif playerX > squareX:
+            if playerX - squareX < squareR + self.r:
+                # return (True, "right")
+                xCollides = True
+
+        if playerY < squareY:
+            if squareY - playerY < squareR + self.r:
+                # return (True, "top")
+                yCollides = True
+        elif playerY > squareY:
+            if playerY - squareY < squareR + self.r:
+                # return (True, "bottom")
+                yCollides = True
+
+        return (xCollides and yCollides, None)
 
 # Parent class of Enemy and Player
 class Person(Entity):
@@ -206,6 +249,7 @@ class Enemy(Person):
                 dy = app.player.y - self.y
                 bullet = Projectile(self.x, self.y, dx, dy, 10, True)
                 app.projectiles.append(bullet)
+            
 
 # Class to represent projectiles.
 class Projectile(Entity):
@@ -229,6 +273,7 @@ class Weapon(object):
         if app.timeCounter >= self.lastFired + self.reloadTime and self.ammo > 0:
             self.ammo -= 1
             self.lastFired = app.timeCounter
+            app.playFiringSound()
             return True
         else:
             return False
@@ -317,9 +362,9 @@ class GameMode(Mode):
                     weaponName = self.board[row][col].split(",")[1]
                     weapon = self.makeWeapon(weaponName)
                     self.weapons.append((row, col, weapon))
-                    print(row, col)
 
         self.obstaclesTest = sorted(list(self.obstacles))[:]
+        self.movePlayer(1)
 
         # TEST CODE FOR ENEMY PATHING
         for enemy in self.enemies:
@@ -334,21 +379,23 @@ class GameMode(Mode):
         self.timeCounter += self.timeScale
         # print(self.player.weapon.name)
 
-        self.player.move(self.timeScale, self)
+        # self.player.move(self.timeScale, self)
+        self.movePlayer()
+
         self.moveProjectiles(self.timeScale)
         self.moveEnemies()
         self.doEnemyAttacks()
 
         # Checking for player-obstacle collisions.
         for (row, col) in self.obstacles:
-            if self.player.collidesWithObstacle((col+.5)*self.cellSize,
-                                                (row+.5)*self.cellSize,
-                                                self.cellSize/2):
-                dx, dy = self.player.dx, self.player.dy
-                self.player.dx *= -1
-                self.player.dy *= -1
-                self.player.move(self.timeScale, self)
-                self.player.dx, self.player.dy = dx, dy
+            # if self.player.collidesWithObstacle((col+.5)*self.cellSize,
+            #                                     (row+.5)*self.cellSize,
+            #                                     self.cellSize/2):
+            #     dx, dy = self.player.dx, self.player.dy
+            #     self.player.dx *= -1
+            #     self.player.dy *= -1
+            #     self.player.move(self.timeScale, self)
+            #     self.player.dx, self.player.dy = dx, dy
     
             for projectile in self.projectiles:
                 if projectile.collidesWithObstacle((col+.5)*self.cellSize,
@@ -498,7 +545,9 @@ class GameMode(Mode):
                 canvas.create_oval(x-p.r, y-p.r, x+p.r, y+p.r, fill=color)
                 # angle = math.atan2(-p.dy,p.dx)*360/(2*math.pi)
                 # print(angle)
+                # bullet = self.bullet.rotate(angle)
                 # canvas.create_image(x,y,image=ImageTk.PhotoImage(self.bullet.rotate(angle)))
+                # canvas.create_image(x,y,image=ImageTk.PhotoImage(bullet))
 
     # Sets up sprites for main character, enemy and background tiles.
     # CITATION: Referenced 15-112 website for caching technique: 
@@ -550,8 +599,9 @@ class GameMode(Mode):
 
         self.weaponSprites = {"pistol":pistol, "machineGun":machinegun, "shotgun": shotgun}
 
-        self.bullet = self.loadImage("img/bullet.gif")
-        self.bullet = self.scaleImage(self.bullet, 1)
+        # self.bullet = self.loadImage("img/bullet3.gif")
+        # self.bullet = self.scaleImage(self.bullet, 1)
+        self.bullet = Image.open("img/bullet3.gif")
 
     # Draws enemies to screen.
     def drawEnemies(self, canvas):
@@ -695,13 +745,18 @@ class GameMode(Mode):
                         self.enemies.remove(e)
                         self.enemiesKilled += 1
 
-    # Draw player's weapon in bottom right corner.
+    # Draw player's weapon in bottom right corner, as well as reload bar/remaining shots.
     def drawPlayerWeapon(self, canvas):
         x1 = self.width * 4 / 5
         x2 = self.width
-        y1 = self.height * 9 / 10
+        y1 = self.height * 8 / 10
         y2 = self.height
+        canvas.create_rectangle(x1,y1,x2,y2,fill="white",outline="black")
         canvas.create_image((x1+x2)/2,(y1+y2)/2,image=self.weaponSprites[self.player.weapon.name].cachedPhotoImage)
+        fractionReloaded = min(1, (self.timeCounter-self.player.weapon.lastFired)/self.player.weapon.reloadTime)
+        reloadX = fractionReloaded*(x2-x1)+x1
+        canvas.create_rectangle(x1,self.height-10,reloadX,self.height,fill="green")
+        # canvas.create_text(text=self.player.weapon.ammo)
 
     # Returns new weapon for given name.
     def makeWeapon(self, weaponName):
@@ -753,6 +808,49 @@ class GameMode(Mode):
             json.dump(stats, statsFile)   
 
         self.enemiesKilled = 0
+
+    # Tries to move player and checks for collisions.
+    def movePlayer(self, initializer=0):
+        pX, pY = self.player.x, self.player.y
+        pR = self.player.r
+        dx, dy = self.player.getMove(self.timeScale)
+        dx += initializer
+        dy += initializer
+        newdx, newdy = dx, dy
+        for (row, col) in self.obstacles:
+            obX, obY = self.getCoords(row, col)
+            result1 = self.player.rectCollidesWithObstacle(pX+dx,pY,obX,obY,self.cellSize/2)
+            result2 = self.player.rectCollidesWithObstacle(pX,pY+dy,obX,obY,self.cellSize/2)
+            
+            # If collision, move player as close to wall as possible.
+            if result1[0]:
+                if dx > 0:
+                    dx = min(dx,(obX-self.cellSize/2)-(pX+pR))
+                else:
+                    dx = max(dx,(obX+self.cellSize/2)-(pX-pR))
+            elif result2[0]:
+                if dy > 0:
+                    dy = min(dy,(obY-self.cellSize/2)-(pY+pR))
+                else:
+                    dy = max(dy,(obY+self.cellSize/2)-(pY-pR))
+                
+        self.player.x += dx
+        self.player.y += dy
+
+        newRow, newCol = self.getCell(self.player.x, self.player.y)
+        if newRow != self.player.row or newCol != self.player.col:
+            self.calculateEnemyPaths()
+            self.player.row, self.player.col = newRow, newCol
+
+    # Plays one of two gunfire sounds depending on the timeScale.
+    def playFiringSound(self):
+        if self.timeScale <= self.minTimeScale + self.timeScaleStep:
+            path = "sound/shoot_slow.wav"
+        else:
+            path = "sound/shoot_fast.wav"
+
+        waveObj = sa.WaveObject.from_wave_file(path)
+        playObj = waveObj.play()
 
 # Gets stats to display on stats menu.
 def getStats():
