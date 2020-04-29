@@ -535,8 +535,6 @@ class App(object):
                 app.updateTitle()
                 app.sizeChanged()
                 app._deferredRedrawAll() # avoid resize crashing on some platforms
-        app.width = 400
-        app.height = 400
 
     @_safeMethod
     def _mouseMotionWrapper(app):

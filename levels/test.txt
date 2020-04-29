@@ -1,0 +1,10 @@
+o|o|o|o|o|o|o|o|o|o
+o|||||||||o
+o|||||||||o
+o|||||||||o
+o||||o|o|o|o||o
+o|||||p,pistol||o||o
+o||||||e,pistol|o||o
+o|||||||||o
+o|||||||||o
+o|o|o|o|o|o|o|o|o|o

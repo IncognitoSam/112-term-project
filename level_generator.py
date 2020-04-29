@@ -31,8 +31,11 @@ def setup(spec, difficulty):
 
     # d = 1+(difficulty-1)/10
     # FIX: This calculation of number of enemies.
-    enemyMultiplier = difficulty*rows*cols/80
-    numEnemies = int(enemyMultiplier)
+    # enemyMultiplier = difficulty*rows*cols/80
+    # numEnemies = int(enemyMultiplier)
+    area = rows*cols
+    numEnemies = difficulty - 1 + int(area/100)
+    # numEnemies = randrange(1,5)+difficulty
     print(numEnemies)
 
     # Create bounding walls.
@@ -125,6 +128,10 @@ def generateTerrain(spec, board):
 
 # Checks that all open space in level is connected.
 def isConnected(spec, board):
+    spec = spec = {"rowMin":10, "rowMax":30, "colMin":10, "colMax":30, "obstacle":"o",
+            "space":"", "stdProb":.1, "diagProb":.1, "adjacentProb":.3,
+            "player":"p", "enemy":"e", "minOpenCells":10, "machineGunProb":.2,
+            "shotgunProb":.4, "weaponSpawnProb":.05}
 
     # Find all open cells.
     openCells = set([])
@@ -154,7 +161,7 @@ def isConnected(spec, board):
     return visited == openCells
 
 spec = {"rowMin":10, "rowMax":30, "colMin":10, "colMax":30, "obstacle":"o",
-            "space":" ", "stdProb":.1, "diagProb":.1, "adjacentProb":.3,
+            "space":"", "stdProb":.1, "diagProb":.1, "adjacentProb":.3,
             "player":"p", "enemy":"e", "minOpenCells":10, "machineGunProb":.2,
             "shotgunProb":.4, "weaponSpawnProb":.05}
 
